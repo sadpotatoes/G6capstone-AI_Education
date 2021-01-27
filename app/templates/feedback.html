@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/feedback_format.css') }}">
+<body>
+	<div class="container">
+		<div class="row border-bottom">
+			<h1 class="font-weight-light pb-3 mb-2 mt-4"> Feedback <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="List out all user disagreed predictions.">
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></h1></a>
+		</div>
+		<div class="text-right">
+			<button id="home" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button>
+            <br><br>
+		</div>
+        <div class="container">
+
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Disagreed Predictions(Healthy):
+				{{h_num}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
+            </h5>
+
+			<hr class="mt-2 mb-5">
+
+			<div class="row text-center text-lg-left">
+				{%for i in range(0, h_list_length)%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					{% if healthy_list[i] == "null"%}
+					<br><br>
+					{% else %}
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{healthy_list[i]}}"
+						alt="">
+					<h6 class="font-weight-normal">Confidence: {{healthy_conf_list[i]}}
+					{% endif %}
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+		<div class="container">
+
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Disagreed Predictions(Unhealthy):
+				{{u_num}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
+            </h5>
+
+			<hr class="mt-2 mb-5">
+
+			<div class="row text-center text-lg-left">
+				{%for i in range(0, u_list_length)%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					{% if unhealthy_list[i] == "null"%}
+					<br><br>
+					{% else %}
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{unhealthy_list[i]}}"
+						alt="">
+					<h6 class="font-weight-normal">Confidence: {{unhealthy_conf_list[i]}}
+					{% endif %}
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+	</div>
+			<footer class="fixed-bottom page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+	    <a href="/">
+	        CornAI</a>
+	        </div>
+	 </footer>
+	<script>
+	var modal = document.getElementById('myModal');
+
+	var images = document.querySelectorAll(".img-thumbnail");
+	var modalImg = document.getElementById("imgset");
+	for(let i = 0; i < images.length; i++){
+	  images[i].onclick = function(){
+	    modal.style.display = "block";
+	    modalImg.src = this.src;
+	  }
+	}
+
+	var span = document.getElementsByClassName("close")[0];
+
+	span.onclick = function(){
+	  modal.style.display = "none";
+	}
+	$(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+    $(document).ready(function(){
+        $('[data-toggle="popover"]').popover();
+    });
+    
+    $(document).ready(function(){
+        $('#home').on('click', function(){
+            window.location.href = '/index.html';                           
+        });
+    });
+ 
+	</script>
+</body>
+</html>
+{% endblock %}

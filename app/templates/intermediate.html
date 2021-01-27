@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/intermediate_format.css') }}">
+<body>
+	<div class="container">
+		<div class="row border-bottom">
+			<h1 class="font-weight-light pb-3 mb-2 mt-4">Intermediate
+				Results <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The intermediate page shows the images you've labeled with current Machine Learning confidence level. It will be automatically tranfered to the final results when the confidence level is over the preset threshold.">
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></h1></a>
+		</div>
+		<div class="text-right">
+			<a href="index.html"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button></a> 
+			<a href="label.html"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="right" title="You can train AI more by labeling more images, which may increase the Machine Learning confidence level">Keep
+					Training</button></a>
+            <br><br>
+			<h5 class="font-weight-normal">Confidence: {{confidence}}
+			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The value of confidence represents how well the AI can predict the currently labeled images.">
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5></a>
+
+		</div>
+        <div class="container">
+
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy(User):
+				{{healthNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
+            </h5>
+
+			<hr class="mt-2 mb-5">
+
+			<div class="row text-center text-lg-left">
+				{%for i in health_user%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{i}}"
+						alt="">
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+		<div class="container">
+
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy(User):
+				{{blightNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
+            </h5>
+
+			<hr class="mt-2 mb-5">
+
+			<div class="row text-center text-lg-left">
+				{%for i in blight_user%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{i}}"
+						alt="">
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+	</div>
+			<footer class="page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+	    <a href="/">
+	        CornAI</a>
+	        </div>
+	 </footer>
+	<script>
+	var modal = document.getElementById('myModal');
+
+	var images = document.querySelectorAll(".img-thumbnail");
+	var modalImg = document.getElementById("imgset");
+	for(let i = 0; i < images.length; i++){
+	  images[i].onclick = function(){
+	    modal.style.display = "block";
+	    modalImg.src = this.src;
+	  }
+	}
+
+	var span = document.getElementsByClassName("close")[0];
+
+	span.onclick = function(){
+	  modal.style.display = "none";
+	}
+	$(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+    $(document).ready(function(){
+        $('[data-toggle="popover"]').popover();
+    });
+	</script>
+</body>
+</html>
+{% endblock %}
