@@ -1,0 +1,37 @@
+Install Steps:
+
+Assuming using Visual Studio Code or similar and have python installed and setup
+While in project folder open the terminal and run 
+
+	python -m venv env
+
+Install required software:
+python -m pip install --upgrade pip
+python -m pip install flask
+pip install Flask-WTF
+pip install Flask-bootstrap
+pip install sklearn
+pip install pandas
+pip install boto3
+
+Now that everything is installed run command
+$env:FLASK_APP = "flask_app"
+This changes the name of the flask apps default program to flask_app 
+
+Now to run the app use:
+	python -m flask run
+	
+This should output something like
+* Serving Flask app "flask_app"
+ * Environment: production
+ 	  WARNING: This is a development server. Do not use it in a production deployment.
+ 	  Use a production WSGI server instead.
+ 	* Debug mode: off
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+At this point copy and paste the http: line into your favourite internet browser and it should be running the site
+
+Also, in case it can’t find the flask_app file it could be an issues with the layout of you project folder. Mine looks like this and seems to work.
+
+
+
+Basically I extracted the github zip into my environment and then pull everything up a level (If you want to skip doing that just make G6capstone-AI_Education-main your environment folder).
