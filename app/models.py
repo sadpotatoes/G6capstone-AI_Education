@@ -1,17 +1,29 @@
-from app import db 
+
+from app import db, login 
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 """
 Setup the basic layout for the database's users inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
     'id' stores the primary key for the user. Each user will be assigned a unique id
-    'nickname' stores the users chosen nickname or username. Unique
+    'username' stores the users chosen nickname or username. Unique
     'email' store the users email. Unique
-    'password' a hashed item that represents a user password (will not directly store the password)
+    'password_hash' a hashed item that represents a user password (will not directly store the password)
 """
-class User(db.Model):
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nickname = db.Column(db.String(64), index=True, unique=True)
+    username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
-    password = db.Column(db.String(128))
+    password_hash = db.Column(db.String(128))
+
+    Confidence_Storage = db.relationship('Confidence', backref='creator', lazy='dynamic')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 
 
 """
@@ -28,3 +40,8 @@ class Confidence(db.Model):
 
 def __repr__(self):
     return '<User {}>'.format(self.username)
+
+@login.user_loader
+def load_user(id):
+    return User.query.get(int(id))
+
