@@ -4,18 +4,21 @@ This method is responsible for the inner workings of the different web pages in 
 """
 from flask import Flask
 from flask import render_template, flash, redirect, url_for, session, request, jsonify
-from app import app
+from app import app, db
 from app.DataPreprocessing import DataPreprocessing
 from app.ML_Class import Active_ML_Model, AL_Encoder, ML_Model
 from app.SamplingMethods import lowestPercentage
-from app.forms import LabelForm
+from app.forms import LabelForm, LoginForm
 from flask_bootstrap import Bootstrap
+from flask_login import logout_user, current_user, login_user
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import os
 import numpy as np
 import boto3
 from io import StringIO
+from app.models import User
+from app.forms import RegistrationForm
 
 bootstrap = Bootstrap(app)
 
@@ -201,6 +204,42 @@ def label():
 
     return render_template('label.html', form = form)
 
+@app.route('/login.html', methods=['GET', 'POST'])
+def login():
+    """
+    Operates the login(login.html) web page.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user, remember=form.remember_me.data)
+        return redirect(url_for('home'))
+    return render_template('login.html', title='Sign In', form = form)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('Registerd!')
+        return redirect(url_for('login'))
+    return render_template('register.html', title='Register', form=form)
+
 @app.route("/intermediate.html",methods=['GET'])
 def intermediate():
     """
@@ -228,5 +267,8 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
     u_length = len(u_feedback_result)
     
     return render_template('feedback.html', healthy_list = h_feedback_result, unhealthy_list = u_feedback_result, healthy_conf_list = h_conf_result, unhealthy_conf_list = u_conf_result, h_list_length = h_length, u_list_length = u_length)
+
+
+
 
 #app.run( host='127.0.0.1', port=5000, debug='True', use_reloader = False)

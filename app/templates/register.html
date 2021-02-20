@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/index_format.css') }}">
+<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="d-none d-md-flex col-md-4 col-lg-6 bg-image"></div>
+			<div class="col-md-8 col-lg-6">
+				<div class="start d-flex py-2">
+					<div class="container">
+						<div class="row">
+							<div class="col-md-9 col-lg-8 mx-auto">
+    							<br><br><br><br><br><br>
+								<p><h1 class="start-heading mb-4">
+									AI for Agriculture
+									</h1></p>
+									<br>
+									<h3>Register</h3><br><br>
+									<form action="" method="post">
+                                        {{ form.hidden_tag() }}
+                                        <p>
+                                            {{ form.username.label }}
+                                            <br>
+                                            {{ form.username(size=32) }}
+                                            <br>
+                                            {% for error in form.username.errors %}
+                                            <span style="color: red;">
+                                                [{{ error }}]
+                                            </span>
+                                            {% endfor %}
+                                        </p>
+                                        <p>
+                                            {{ form.email.label }}
+                                            <br>
+                                            {{ form.email(size=64) }}
+                                            <br>
+                                            {% for error in form.email.errors %}
+                                            <span style="color: red;">
+                                                [{{ error }}]
+                                            </span>
+                                            {% endfor %}
+                                        </p>
+                                        <p>
+                                            {{ form.password.label }}
+                                            <br>
+                                            {{ form.password(size=32) }}
+                                            <br>
+                                            {% for error in form.password.errors %}
+                                            <span style="color: red;">
+                                                [{{ error }}]
+                                            </span>
+                                            {% endfor %}
+                                        </p>
+                                        <p>
+                                            {{ form.password2.label }}
+                                            <br>
+                                            {{ form.password2(size=32) }}
+                                            <br>
+                                            {% for error in form.password2.errors %}
+                                            <span style="color: red;">
+                                                [{{ error }}]
+                                            </span>
+                                            {% endfor %}
+                                        </p>
+                                        <p>
+                                            {{ form.submit() }}
+                                        </p>
+                                    </form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<footer class="page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+            CornAI
+        </div>
+	 </footer>
+</body>
+</html>
+{% endblock %}
