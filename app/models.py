@@ -1,3 +1,4 @@
+
 from app import db, login 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -24,6 +25,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+
 """
 Setup the basic layout for the user's csvs (storing tehir confidence rate) inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
     'id' stores the primary key for the model. Each csv will be assigned a unique id
@@ -42,3 +44,4 @@ def __repr__(self):
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
