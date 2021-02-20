@@ -1,26 +1,26 @@
-Install Steps:
-
-Assuming using Visual Studio Code or similar and have python installed and setup
+Install Steps
+Assuming using Visual Studio Code or similar, have python 3 installed and setup and on windows
 While in project folder open the terminal and run 
-
 	python -m venv env
-
-Install required software:
+Install required software
 python -m pip install --upgrade pip
 python -m pip install flask
-pip install Flask-WTF
-pip install Flask-bootstrap
-pip install sklearn
-pip install pandas
-pip install boto3
+python -m pip install Flask-WTF
+python -m pip install Flask-bootstrap
+python -m pip install sklearn
+python -m pip install pandas
+python -m pip install boto3
+python -m pip install fsspec
+python -m pip install s3fs
+At this point you might need to reinstall boto3 in s3fs uninstalled it
 
 Now that everything is installed run command
 $env:FLASK_APP = "flask_app"
+If running from cmd line instead of IDE use 
+	set FLASK_APP=flask_app
 This changes the name of the flask apps default program to flask_app 
-
-Now to run the app use:
+Now to run the app use
 	python -m flask run
-	
 This should output something like
 * Serving Flask app "flask_app"
  * Environment: production
@@ -35,3 +35,43 @@ Also, in case it can’t find the flask_app file it could be an issues with the 
 
 
 Basically I extracted the github zip into my environment and then pull everything up a level (If you want to skip doing that just make G6capstone-AI_Education-main your environment folder).
+
+
+
+Following tutorial at: https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iv-database
+For creation of the database you’ll need 2 more pip installs
+	python -m pip install flask-sqlalchemy
+	python -m pip install flask-migrate
+	(flask-migrate is used for updating the structure of the database incase revisions are necessary)
+You'll also need to install Flask-login
+	python -m pip install flask-login
+
+
+
+
+
+
+
+
+!!!DO NOT FOLLOW THIS SECTION ALREADY GENERATED CODE WILL BE UPLOADED!!!
+To create the database (using code from github) run these commands 
+	python -m flask db init
+This should output something like 
+Creating directory C: … done
+Creating directory C: ...  done
+Generating C: ...  done
+Generating C: ...  done
+Generating C: ...  done
+Generating C: ...  done
+Please edit configuration/connection/logging settings in 'C:’ before preceding 
+python -m flask db migrate -m "users table"
+This should output
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.autogenerate.compare] Detected added table 'user'
+INFO  [alembic.autogenerate.compare] Detected added index 'ix_user_email' on '['email']'
+INFO  [alembic.autogenerate.compare] Detected added index 'ix_user_nickname' on '['nickname']'
+Generating C: …\migrations\versions\79cc6c580ecc_users_table.py ...  done
+This merged the database with a new one “users table” (doesn’t exist)
+NOTE “users table” is the name of the database
+To update the database you’ll need need to use “python -m flask db upgrade” not migrate
