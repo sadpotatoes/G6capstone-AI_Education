@@ -55,7 +55,7 @@ You'll also need to install Flask-login and email-validator
 
 
 !!!DO NOT FOLLOW THIS SECTION ALREADY GENERATED CODE WILL BE UPLOADED!!!
-To create the database (using code from github) run these commands 
+To create the database (using code from github) run these commands (SPECIFICALLY FOR CREATING USER TABLE) 
 	python -m flask db init
 This should output something like 
 Creating directory C: … done
@@ -65,6 +65,7 @@ Generating C: ...  done
 Generating C: ...  done
 Generating C: ...  done
 Please edit configuration/connection/logging settings in 'C:’ before preceding 
+
 python -m flask db migrate -m "users table"
 This should output
 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
@@ -76,3 +77,6 @@ Generating C: …\migrations\versions\79cc6c580ecc_users_table.py ...  done
 This merged the database with a new one “users table” (doesn’t exist)
 NOTE “users table” is the name of the database
 To update the database you’ll need need to use “python -m flask db upgrade” not migrate
+
+
+python -m flask db upgrade
