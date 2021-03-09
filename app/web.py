@@ -17,7 +17,7 @@ import os
 import numpy as np
 import boto3
 from io import StringIO
-from app.models import User
+from app.models import User, Confidence
 from app.forms import RegistrationForm
 
 bootstrap = Bootstrap(app)
@@ -57,6 +57,7 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
+
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -172,7 +173,81 @@ def prepairResults(form):
     else:
         test_set = data.loc[session['test'], :]
         health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
-        return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+        
+        if current_user.is_authenticated:
+            """If there is a user logged in we'll try and save their slections for healthy and blighted pictures to our database so that later the user can pick up where they left off
+               Though since we are only storing the image names we'll need to regenerate the ML_Model when the want to continue
+              The names will be stored as a string sepearted by ',' This will also be done at alater points to update their selected lists
+              Since this needs to be done in strings we need two fields for each healthy and blighted, this will result in almost duplicated code
+              One final note, we could store the form class directly but this will cause issues when we try to store the feedback selections since they don't use form"""
+            
+            """first find current user"""
+            user = User.query.filter_by(username = current_user.username).first()
+            
+            """if a user already has a list of image names for data then we need to append to it instead of overwritting it
+               One thing needed to do if we append list is we need to remove duplicates
+               To do this we are turning it back into a list and subtracting the new list from that list and appending the result
+               This should leave us with the new list without the duplciates then we reconvert back to string"""
+
+
+
+            """if user has no confidence data we simply set names to our list from the form
+            Originally this was an if/else statement but for some reason python wouldn't work that way
+            Not sure why it wouldn't it would spit up errors on teh else: statement"""
+            
+            """we need to check if users pics exist"""
+            if health_pic_user:
+                health_pic_user_names = ",".join(health_pic_user)
+            else:
+                health_pic_user_names = ""
+            if blight_pic_user:
+                blighted_pic_user_names = ",".join(blight_pic_user)
+            else:
+                blighted_pic_user_names = ""
+
+
+            """if user has confidence data we start converting and appending ignoring duplicates
+               While I do not expect to run into any duplciates and also don't know if having them would muck up the machine learning I think it would be best to err on the side of caution"""
+            if Confidence.query.filter_by(user_id = user.id).first():
+                """get healthy data images and append ignoring duplicates"""
+                original_healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
+                original_healthy_list = original_healthy_string.split(",")
+                
+                in_original_healthy = set(original_healthy_list)
+                in_new_healthy = set(health_pic_user)
+                in_new_not_original_healthy = in_new_healthy - in_original_healthy
+
+                result_healthy = original_healthy_list + list(in_new_not_original_healthy)
+                health_pic_user_names = ",".join(result_healthy)
+
+                """get blighted data images and append ignoring duplicates"""
+                original_blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
+                original_blighted_list = original_blighted_string.split(",")
+                
+                in_original_blighted = set(original_blighted_list)
+                in_new_blighted = set(blight_pic_user)
+                in_new_not_original_blighted = in_new_blighted - in_original_blighted
+
+                result_blighted = original_blighted_list + list(in_new_not_original_blighted)
+                blighted_pic_user_names = ",".join(result_blighted)
+
+                """Clear original data in database"""
+                db.session.delete(Confidence.query.filter_by(user_id = user.id).first())
+                db.session.commit()
+
+            """create new database data and commit"""
+            user_data = Confidence(healthy_data = health_pic_user_names, blighted_data = blighted_pic_user_names, creator = user)
+            db.session.add(user_data)
+            db.session.commit()
+            """now we render the page using the names in the database, since we've already pulled them we should just changed whats passed to the render_template
+               This will need to be in list form so we change the string to list via string split"""
+            health_pic_database = health_pic_user_names.split(",")
+            blight_pic_database = blighted_pic_user_names.split(",")
+            return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_database, blight_user = blight_pic_database, healthNum_user = len(health_pic_database), blightNum_user = len(blight_pic_database), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+        
+        else: 
+            return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+
 
 @app.route("/", methods=['GET'])
 @app.route("/index.html",methods=['GET'])
@@ -189,9 +264,32 @@ def label():
     Operates the label(label.html) web page.
     """
     form = LabelForm()
+    if current_user.is_authenticated:
+        user = User.query.filter_by(username = current_user.username).first()
+        if Confidence.query.filter_by(user_id = user.id).first():
+            """In the case that the user goes to the home  page without closing the page and attempts to reload their ML model we'll need to wipe the session of labels and reset the form 
+               since they will continue to hold information from the previous run and duplicate them upon loading which will change the confidence rate"""
+            form = LabelForm()
+            session['labels'] = []
+            
+            """Here we are pulling the number of images stored in the database to be appened onto labels for the model to be created with"""
+            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
+            healthy_list = healthy_string.split(',')
+            for i in healthy_list:
+                if i:
+                    session['labels'].append('H')
+
+            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
+            blighted_list = blighted_string.split(',')
+            for i in blighted_list:
+                if i:
+                    session['labels'].append('B')
+
+            """Here we pass a blank form since we don't gather any information from on and have already appended info into labels"""
+            return prepairResults(form)
+    
     if 'model' not in session:#Start
         return initializeAL(form, .7)
-
     elif session['queue'] == [] and session['labels'] == []: # Need more pictures
         return getNextSetOfImages(form, lowestPercentage)
 
@@ -266,6 +364,9 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
     h_length = len(h_feedback_result)
     u_length = len(u_feedback_result)
     
+    """Here we should store the selected images for storing in the database"""
+
+
     return render_template('feedback.html', healthy_list = h_feedback_result, unhealthy_list = u_feedback_result, healthy_conf_list = h_conf_result, unhealthy_conf_list = u_conf_result, h_list_length = h_length, u_list_length = u_length)
 
 
