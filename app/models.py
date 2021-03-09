@@ -1,4 +1,3 @@
-
 from app import db, login 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -24,18 +23,31 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @staticmethod
+    def make_unique_username(username):
+        if User.query.filter_by(username=username).first() is None:
+            return username
+        version = 2
+        while True:
+            new_username = username + str(version)
+            if User.query.filter_by(username=new_username).first() is None:
+                break
+            version += 1
+        return new_username
 
 
 """
-Setup the basic layout for the user's csvs (storing tehir confidence rate) inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
+Setup the basic layout for the user's csvs (storing their confidence rate) inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
     'id' stores the primary key for the model. Each csv will be assigned a unique id
     'user_id' is a foreign key that connects the confidence data to the user
-    'data' is a LargeBinary file that will be the csv file. Should instead create a file system and store csv's there and change 'data' to instead be a path to the file
+    'healthy_data' is a string that that holds the names of all healthy images the user selected
+    'blighted_data' is a string that that holds the names of all blighted images the user selected
 """ 
 class Confidence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    data = db.Column(db.LargeBinary)
+    healthy_data = db.Column(db.String)
+    blighted_data = db.Column(db.String)
 
 
 def __repr__(self):
@@ -44,4 +56,3 @@ def __repr__(self):
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
-
