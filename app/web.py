@@ -57,7 +57,7 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
-    """
+    
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
@@ -76,7 +76,6 @@ def createMLModel(data):
                 if i:
                     train_img_names.append(i)
                     train_img_label.append('B')
-    """
 
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
@@ -296,7 +295,9 @@ def label():
 
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
-        if Confidence.query.filter_by(user_id = user.id).first():       
+        if Confidence.query.filter_by(user_id = user.id).first():     
+            """Here we need to initialize our ML however there's an issue with using the code made by the previous students as a lot of it is hard coded and doesn't
+               expect to be fed images like this so we need to do it all by hand"""  
             """Here we are pulling the number of images stored in the database to be appened onto labels for the model to be created with"""
             healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
             healthy_list = healthy_string.split(',')
