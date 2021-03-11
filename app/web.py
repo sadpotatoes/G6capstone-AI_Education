@@ -58,6 +58,24 @@ def createMLModel(data):
     """
     train_img_names, train_img_label = list(zip(*session['train']))
 
+    if current_user.is_authenticated:
+        user = User.query.filter_by(username = current_user.username).first()
+        if Confidence.query.filter_by(user_id = user.id).first():
+            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
+            healthy_list = healthy_string.split(',')
+            train_img_label = []
+            train_img_names = []
+            for i in healthy_list:
+                if i:
+                    train_img_names.append(i)
+                    train_img_label.append('H')
+            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
+            blighted_list = blighted_string.split(',')
+            for i in blighted_list:
+                if i:
+                    train_img_names.append(i)
+                    train_img_label.append('B')
+
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -232,8 +250,14 @@ def prepairResults(form):
             db.session.commit()
             """now we render the page using the names in the database, since we've already pulled them we should just changed whats passed to the render_template
                This will need to be in list form so we change the string to list via string split"""
-            health_pic_database = health_pic_user_names.split(",")
-            blight_pic_database = blighted_pic_user_names.split(",")
+            if health_pic_user_names:
+                health_pic_database = health_pic_user_names.split(",")
+            else:
+                health_pic_database = []
+            if blighted_pic_user_names:
+                blight_pic_database = blighted_pic_user_names.split(",")
+            else:
+                blight_pic_database = []
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_database, blight_user = blight_pic_database, healthNum_user = len(health_pic_database), blightNum_user = len(blight_pic_database), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
         
         else: 
@@ -258,7 +282,9 @@ def label():
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
-            """healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
+            
+            session['labels'] = []
+            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
             healthy_list = healthy_string.split(',')
             for i in healthy_list:
                 healthy_data = [i, 'H']
@@ -269,8 +295,7 @@ def label():
                 blighted_data = [i, 'B']
 
             session['labels'].append(healthy_data)
-            session['labels'].append(blighted_data)"""
-            """Here we need to populate the form with information from the database and pass it to prepairResults"""
+            session['labels'].append(blighted_data)
 
 
             return prepairResults(form)
