@@ -245,6 +245,32 @@ class Active_ML_Model:
         train : pandas DataFrame
             The train set.
         """
+
+
+
+        """I think if we add a section here should allow us to load from the database
+           it could easily be added by creating a if statement that if ml_classifier isn't RandomForest
+           then do what we need
+           Some good news about that is we shouldn't need to modify the number of parameters or import anything
+           new since this extends web.py and we can simply assume that a user is logged in since the only way we
+           load a different ml_classifier is if this is called from a section that already required a user login check
+           """
+
+        """if ml_classifier is not RandomForestClassifier():
+            user = User.query.filter_by(username = current_user.username).first()
+            
+            A few things need to be done here we need to search data for the image names from the user
+            database entry and figure out a way to set self.sample and test equal to them
+            and we need to 
+
+            self.sample = data.iloc[:n_samples, :]
+            self.test = data.iloc[n_samples:, :]
+            self.train = None
+            self.ml_classifier = ml_classifier
+            self.preprocess = preprocess
+            """
+
+
         from sklearn.utils import shuffle
         data = shuffle(data)
         self.sample = data.iloc[:n_samples, :]
