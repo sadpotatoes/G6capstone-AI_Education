@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['fdharalick_59',['FdHaralick',['../classapp_1_1_image_preprocessing_1_1_image_preprocessing.html#aa5c567f2d2c867211c3e27c4ad7dfa5a',1,'app::ImagePreprocessing::ImagePreprocessing']]],
+  ['fdhistogram_60',['FdHistogram',['../classapp_1_1_image_preprocessing_1_1_image_preprocessing.html#a6604212384b8d7c28a86ea32a146a0f6',1,'app::ImagePreprocessing::ImagePreprocessing']]],
+  ['fdhumoments_61',['FdHuMoments',['../classapp_1_1_image_preprocessing_1_1_image_preprocessing.html#a345a9e0f2e85581cab7b8718d5a62a2c',1,'app::ImagePreprocessing::ImagePreprocessing']]],
+  ['feature_5fvector_62',['feature_vector',['../classapp_1_1_image_preprocessing_1_1_image_preprocessing.html#a29686405c074c74ebe37ac42673f3e73',1,'app::ImagePreprocessing::ImagePreprocessing']]],
+  ['featureselection_63',['FeatureSelection',['../namespace_feature_selection.html',1,'']]],
+  ['featureselection_2epy_64',['FeatureSelection.py',['../_feature_selection_8py.html',1,'']]],
+  ['feedback_65',['feedback',['../namespaceapp_1_1web.html#acd9773db0da5db0e427fa8675733f833',1,'app::web']]],
+  ['fig_66',['fig',['../namespace_advanced_feature_tuner.html#a09538131b40a09a339ce6cc178b9747d',1,'AdvancedFeatureTuner']]],
+  ['filein_67',['fileIn',['../namespace_advanced_feature_tuner.html#a807cc1068bc4c0c7e0f77db635290479',1,'AdvancedFeatureTuner']]],
+  ['final_68',['final',['../namespaceapp_1_1web.html#ad5fa6097cc43f3c196da92ff44a2c3d8',1,'app::web']]],
+  ['fit_5ftransform_69',['fit_transform',['../classapp_1_1_data_preprocessing_1_1_data_preprocessing.html#a9b4a9d0732473e0a8cee12aac543d6af',1,'app::DataPreprocessing::DataPreprocessing']]],
+  ['flask_5fapp_70',['flask_app',['../namespaceflask__app.html',1,'']]],
+  ['flask_5fapp_2epy_71',['flask_app.py',['../flask__app_8py.html',1,'']]],
+  ['folder_5fname_72',['folder_name',['../classapp_1_1_image_preprocessing_1_1_image_preprocessing.html#a23a99c5ec80a98c76fdb5a8b195f8f3f',1,'app::ImagePreprocessing::ImagePreprocessing']]],
+  ['foreground_73',['foreground',['../namespace_advanced_feature_tuner.html#a1f4f26a83f118dfa76dcfc1a585841e4',1,'AdvancedFeatureTuner']]],
+  ['forms_2epy_74',['forms.py',['../forms_8py.html',1,'']]]
+];
