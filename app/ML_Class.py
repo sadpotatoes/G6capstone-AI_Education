@@ -259,18 +259,9 @@ class Active_ML_Model:
             user = User.query.filter_by(username = current_user.username).first()
             if Confidence.query.filter_by(user_id = user.id).first(): 
                 
-                healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
-                
-                blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
-
-                if blighted_string and healthy_string:
-                    full_string = healthy_string + "," + blighted_string
-                elif blighted_string and ~healthy_string:
-                    full_string = blighted_string
-                else:
-                    full_string = healthy_string
+                img_names = Confidence.query.filter_by(user_id = user.id).first().img_names
     
-                result = full_string.split(",")
+                result = img_names.split(",")
 
                 """In order to re arrange our dataframe so that our images pulled from the database are on top
                 we need to first create a list of indexes with our images in the first positions and everything else following
