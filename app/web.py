@@ -56,12 +56,6 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
-    """print("---------------")
-    print("train img names")
-    print(train_img_names)
-    print("---------------")
-    print("train img label")
-    print(train_img_label)"""
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -222,7 +216,6 @@ def prepairResults(form):
             
             img_names = ",".join(temp_img_names)
             labels = ",".join(temp_labels)
-            print(img_names)
             user_data = Confidence(img_names = img_names, img_labels = labels, creator = user)
             db.session.add(user_data)
             db.session.commit()
@@ -339,10 +332,9 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
             
             if h_list != 'null':
                 for i in h_feedback_result:
-
                     img_names_list.append(i)
                     labels = labels + ',' + 'B'
-            print(img_names_list)
+
             """Clear original data in database"""
             img_names = ",".join(img_names_list)
             db.session.delete(Confidence.query.filter_by(user_id = user.id).first())
