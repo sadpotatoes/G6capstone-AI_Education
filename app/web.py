@@ -56,6 +56,12 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
+    print("---------------")
+    print("train img names")
+    print(train_img_names)
+    print("---------------")
+    print("train img label")
+    print(train_img_label)
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -111,14 +117,7 @@ def initializeAL(form, confidence_break = .7):
     session['queue'] = list(al_model.sample.index.values)
 
     """In order to stop an issue where the system asks the user to re label one of their selected images we need to make sure the queue is empty and skip calling RenderLabel"""
-    """
-    print("---------------")
-    print("sample_idx")
-    print(session['sample_idx'])
-    print("---------------")
-    print("test")
-    print(session['test'])
-    """
+
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
@@ -213,13 +212,7 @@ def prepairResults(form):
     else:
         test_set = data.loc[session['test'], :]
         health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
-        print("---------------")
-        print("health pic user")
-        print(health_pic_user)
-        print("---------------")
-        print("blight pic user")
-        print(blight_pic_user)
-
+        
         if current_user.is_authenticated:
             """If there is a user logged in we'll try and save their slections for healthy and blighted pictures to our database so that later the user can pick up where they left off
                Though since we are only storing the image names we'll need to regenerate the ML_Model when the want to continue
@@ -259,6 +252,7 @@ def prepairResults(form):
                 original_healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
                 original_healthy_list = original_healthy_string.split(",")
                 
+
                 in_original_healthy = set(original_healthy_list)
                 in_new_healthy = set(health_pic_user)
                 in_new_not_original_healthy = in_new_healthy - in_original_healthy
@@ -286,7 +280,6 @@ def prepairResults(form):
             user_data = Confidence(healthy_data = health_pic_user_names, blighted_data = blighted_pic_user_names, creator = user)
             db.session.add(user_data)
             db.session.commit()
-
 
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
         

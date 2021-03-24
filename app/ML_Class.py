@@ -188,12 +188,6 @@ class ML_Model:
             List of images in the test set that are predicted to being blighted.
         """
         health_pic_user, blight_pic_user = self.infoForProgress(train_img_names)
-        print("---------------")
-        print("health pic user")
-        print(health_pic_user)
-        print("---------------")
-        print("blight pic user")
-        print(blight_pic_user)
         test_pic = list(test.index.values)
         y_pred, y_prob = self.GetUnknownPredictions(test)
         health_pic = []
@@ -277,10 +271,7 @@ class Active_ML_Model:
                     full_string = healthy_string
     
                 result = full_string.split(",")
-                print("----------\n full string")
-                print(full_string)
 
-                temp_samples = 0
                 """In order to re arrange our dataframe so that our images pulled from the database are on top
                 we need to first create a list of indexes with our images in the first positions and everything else following
                 this way we can reindex to our desired set up and continue"""
