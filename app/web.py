@@ -36,7 +36,6 @@ def getData():
 
     data = pd.read_csv(path, index_col = 0, header = None)
     data.columns = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
-
     data_mod = data.astype({'8': 'int32','9': 'int32','10': 'int32','12': 'int32','14': 'int32'})
     return data_mod.iloc[:, :-1]
 
@@ -57,26 +56,6 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
-    """
-    if current_user.is_authenticated:
-        user = User.query.filter_by(username = current_user.username).first()
-        if Confidence.query.filter_by(user_id = user.id).first():
-            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
-            healthy_list = healthy_string.split(',')
-            train_img_label = []
-            train_img_names = []
-            for i in healthy_list:
-                if i:
-                    train_img_names.append(i)
-                    train_img_label.append('H')
-
-            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
-            blighted_list = blighted_string.split(',')
-            for i in blighted_list:
-                if i:
-                    train_img_names.append(i)
-                    train_img_label.append('B')
-    """
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -118,7 +97,7 @@ def initializeAL(form, confidence_break = .7):
         renders the label.html webpage.
     """
     preprocess = DataPreprocessing(True)
-    ml_classifier = RandomForestClassifier()
+    ml_classifier = RandomForestClassifier() 
     data = getData()
     al_model = Active_ML_Model(data, ml_classifier, preprocess)
 
@@ -131,10 +110,37 @@ def initializeAL(form, confidence_break = .7):
     session['model'] = True
     session['queue'] = list(al_model.sample.index.values)
 
+    """In order to stop an issue where the system asks the user to re label one of their selected images we need to make sure the queue is empty and skip calling RenderLabel"""
+    """
+    print("---------------")
+    print("sample_idx")
+    print(session['sample_idx'])
+    print("---------------")
+    print("test")
+    print(session['test'])
+    """
+    if current_user.is_authenticated:
+        user = User.query.filter_by(username = current_user.username).first()
+        if Confidence.query.filter_by(user_id = user.id).first():
+            session['queue'] = []
+            
+            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
+            healthy_list = healthy_string.split(',')
+            for i in healthy_list:
+                if i:
+                    session['labels'].append('H')
+
+            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
+            blighted_list = blighted_string.split(',')
+            for i in blighted_list:
+                if i:
+                    session['labels'].append('B')
+
+            return prepairResults(form)
+
+
     return renderLabel(form)
 
-
-"""Look to make another initializeAL but in the case that a user is logged in"""
 
 
 
@@ -177,16 +183,26 @@ def prepairResults(form):
     render_template : flask function
         renders the appropriate webpage based on new confidence score.
     """
-    session['labels'].append(form.choice.data)
-    session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
+    """Here if use is logged in and has a database entry then we need to append those to the session labels else append from latest form choice"""
+    if form.choice.data:
+        session['labels'].append(form.choice.data)
 
+    session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
+    print("----------")
+    print("sample")
+    print(session['sample'])
+    
     if session['train'] != None:
         session['train'] = session['train'] + session['sample']
     else:
         session['train'] = session['sample']
 
+
     data = getData()
     ml_model, train_img_names = createMLModel(data)
+    print("----------")
+    print("train img names")
+    print(train_img_names)
 
     session['confidence'] = np.mean(ml_model.K_fold())
     session['labels'] = []
@@ -197,7 +213,13 @@ def prepairResults(form):
     else:
         test_set = data.loc[session['test'], :]
         health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
-        
+        print("---------------")
+        print("health pic user")
+        print(health_pic_user)
+        print("---------------")
+        print("blight pic user")
+        print(blight_pic_user)
+
         if current_user.is_authenticated:
             """If there is a user logged in we'll try and save their slections for healthy and blighted pictures to our database so that later the user can pick up where they left off
                Though since we are only storing the image names we'll need to regenerate the ML_Model when the want to continue
@@ -240,6 +262,7 @@ def prepairResults(form):
                 in_original_healthy = set(original_healthy_list)
                 in_new_healthy = set(health_pic_user)
                 in_new_not_original_healthy = in_new_healthy - in_original_healthy
+                
 
                 result_healthy = original_healthy_list + list(in_new_not_original_healthy)
                 health_pic_user_names = ",".join(result_healthy)
@@ -263,19 +286,9 @@ def prepairResults(form):
             user_data = Confidence(healthy_data = health_pic_user_names, blighted_data = blighted_pic_user_names, creator = user)
             db.session.add(user_data)
             db.session.commit()
-            """now we render the page using the names in the database, since we've already pulled them we should just changed whats passed to the render_template
-               This will need to be in list form so we change the string to list via string split"""
-            if health_pic_user_names:
-                health_pic_database = health_pic_user_names.split(",")
-            else:
-                health_pic_database = []
 
-            if blighted_pic_user_names:
-                blight_pic_database = blighted_pic_user_names.split(",")
-            else:
-                blight_pic_database = []
 
-            return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_database, blight_user = blight_pic_database, healthNum_user = len(health_pic_database), blightNum_user = len(blight_pic_database), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_database)+len(blight_pic_database)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+            return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
         
         else: 
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
@@ -296,30 +309,6 @@ def label():
     Operates the label(label.html) web page.
     """
     form = LabelForm()
-    
-
-    if current_user.is_authenticated:
-        user = User.query.filter_by(username = current_user.username).first()
-        if Confidence.query.filter_by(user_id = user.id).first():     
-            """Here we need to initialize our ML however there's an issue with using the code made by the previous students as a lot of it is hard coded and doesn't
-               expect to be fed images like this so we need to do it all by hand so we cant use initializeAL
-               
-               To do this look to ML_Class.py and how it uses test train and sample"""  
-            """Here we are pulling the number of images stored in the database to be appened onto labels for the model to be created with"""
-            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
-            healthy_list = healthy_string.split(',')
-            for i in healthy_list:
-                if i:
-                    session['labels'].append('H')
-
-            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
-            blighted_list = blighted_string.split(',')
-            for i in blighted_list:
-                if i:
-                    session['labels'].append('B')
-
-            """Here we pass a blank form since we don't gather any information from on and have already appended info into labels"""
-            return prepairResults(form)
     
     if 'model' not in session:#Start
         return initializeAL(form, .7)
