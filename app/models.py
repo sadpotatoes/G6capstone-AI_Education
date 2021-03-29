@@ -46,6 +46,7 @@ Setup the basic layout for the user's csvs (storing their confidence rate) inhei
 class Confidence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+<<<<<<< HEAD
     img_names = db.Column(db.String)
     img_labels = db.Column(db.String)
     """Since img_names stores the images in the orders they are selected we can regenerate previous accuracy rates using just the number of images in the string
@@ -55,6 +56,10 @@ class Confidence(db.Model):
     previous = db.Column(db.String)
     """Keep the most recent accuracy_rate stored here for use in databse"""
     accuracy_rate = db.Column(db.Float)
+=======
+    healthy_data = db.Column(db.String)
+    blighted_data = db.Column(db.String)
+>>>>>>> main
 
 
 def __repr__(self):
