@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/feedback_format.css') }}">
+<body>
+	<div class="container">
+		<div class="row border-bottom">
+			<h1 class="font-weight-light pb-3 mb-2 mt-4"> Leaderboards </h1>
+		</div>
+		<div class="text-right">
+			<button id="home" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page">Home</button>
+			</h1></p>
+		</div>
+
+		<div class="row">
+			<div class="column">
+				<h4>Username:	</h4>
+				<p>
+					{%for i in range(0, length)%}
+						{{names[i]}}
+						<br>
+				
+					{%endfor%}
+				</p>
+			</div>
+			<div class="column">
+				<h4>Accuracy Rate:	</h4>
+				<p>
+					{%for i in range(0, length)%}
+						{{acc[i]}}%
+						<br>
+				
+					{%endfor%}
+				</p>
+			</div>
+			<div class="column">
+				<h4>Number of Images:	</h4>
+				<p>{%for i in range(0, length)%}
+					{{num_imgs[i]}}
+					<br>
+			
+				{%endfor%}</p>
+			</div>
+		  </div>
+		</div>
+	</div>
+	<footer class="page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+            CornAI
+        </div>
+	 </footer>
+	 <script>
+	 $(document).ready(function(){
+        $('#home').on('click', function(){
+            window.location.href = '/index.html';                           
+        });
+    });
+ 
+	</script>
+</body>
+</html>
+{% endblock %}

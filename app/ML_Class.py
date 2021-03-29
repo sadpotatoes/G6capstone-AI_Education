@@ -5,6 +5,11 @@ Created on Thu Feb  6 12:54:45 2020
 """
 import json
 from json import JSONEncoder
+from flask_login import current_user
+from app import db
+from app.models import User, Confidence
+import pandas as pd
+import numpy as np
 
 class ML_Model:
     """
@@ -247,6 +252,25 @@ class Active_ML_Model:
         """
         from sklearn.utils import shuffle
         data = shuffle(data)
+        
+        """I'm thinking If I can get this code to work then a lot of the code in web.py is redundant
+        specifically in the label and createML functions"""
+        if current_user.is_authenticated:
+            user = User.query.filter_by(username = current_user.username).first()
+            if Confidence.query.filter_by(user_id = user.id).first(): 
+                
+                img_names = Confidence.query.filter_by(user_id = user.id).first().img_names
+    
+                result = img_names.split(",")
+
+                """In order to re arrange our dataframe so that our images pulled from the database are on top
+                we need to first create a list of indexes with our images in the first positions and everything else following
+                this way we can reindex to our desired set up and continue"""
+                new_idx = result + [y for y in data.index.values if y not in result]
+                data = data.reindex(new_idx)
+                n_samples = len(result)
+
+
         self.sample = data.iloc[:n_samples, :]
         self.test = data.iloc[n_samples:, :]
         self.train = None
