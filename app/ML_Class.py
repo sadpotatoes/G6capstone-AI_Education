@@ -5,6 +5,11 @@ Created on Thu Feb  6 12:54:45 2020
 """
 import json
 from json import JSONEncoder
+from flask_login import current_user
+from app import db
+from app.models import User, Confidence
+import pandas as pd
+import numpy as np
 
 class ML_Model:
     """
@@ -245,34 +250,27 @@ class Active_ML_Model:
         train : pandas DataFrame
             The train set.
         """
-
-
-
-        """I think if we add a section here should allow us to load from the database
-           it could easily be added by creating a if statement that if ml_classifier isn't RandomForest
-           then do what we need
-           Some good news about that is we shouldn't need to modify the number of parameters or import anything
-           new since this extends web.py and we can simply assume that a user is logged in since the only way we
-           load a different ml_classifier is if this is called from a section that already required a user login check
-           """
-
-        """if ml_classifier is not RandomForestClassifier():
-            user = User.query.filter_by(username = current_user.username).first()
-            
-            A few things need to be done here we need to search data for the image names from the user
-            database entry and figure out a way to set self.sample and test equal to them
-            and we need to 
-
-            self.sample = data.iloc[:n_samples, :]
-            self.test = data.iloc[n_samples:, :]
-            self.train = None
-            self.ml_classifier = ml_classifier
-            self.preprocess = preprocess
-            """
-
-
         from sklearn.utils import shuffle
         data = shuffle(data)
+        
+        """I'm thinking If I can get this code to work then a lot of the code in web.py is redundant
+        specifically in the label and createML functions"""
+        if current_user.is_authenticated:
+            user = User.query.filter_by(username = current_user.username).first()
+            if Confidence.query.filter_by(user_id = user.id).first(): 
+                
+                img_names = Confidence.query.filter_by(user_id = user.id).first().img_names
+    
+                result = img_names.split(",")
+
+                """In order to re arrange our dataframe so that our images pulled from the database are on top
+                we need to first create a list of indexes with our images in the first positions and everything else following
+                this way we can reindex to our desired set up and continue"""
+                new_idx = result + [y for y in data.index.values if y not in result]
+                data = data.reindex(new_idx)
+                n_samples = len(result)
+
+
         self.sample = data.iloc[:n_samples, :]
         self.test = data.iloc[n_samples:, :]
         self.train = None
