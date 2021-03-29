@@ -116,7 +116,6 @@ def initializeAL(form, confidence_break = .7):
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
             session['queue'] = []
-            
             img_labels = Confidence.query.filter_by(user_id = user.id).first().img_labels
             img_labels_list = img_labels.split(',')
             for i in img_labels_list:
@@ -203,28 +202,62 @@ def prepairResults(form):
             
             img_names = ""
             labels = ""
-            
-            
-            """Clear original data in database"""
-            if Confidence.query.filter_by(user_id = user.id).first():
-
-                db.session.delete(Confidence.query.filter_by(user_id = user.id).first())
-                db.session.commit()
-
-            """create new database data and commit"""
             temp_img_names, temp_labels =  list(zip(*session['train']))
-            
+            accuracy = 0.0
             img_names = ",".join(temp_img_names)
             labels = ",".join(temp_labels)
-            user_data = Confidence(img_names = img_names, img_labels = labels, creator = user)
-            db.session.add(user_data)
-            db.session.commit()
+            """If user has information already stored then update it"""
+            
+            if Confidence.query.filter_by(user_id = user.id).first():
+                c = Confidence.query.filter_by(user_id = user.id).first()
+                c.img_labels = labels
+                c.img_names = img_names
 
+                """if they dont have information then create and commit"""
+            else:
+                user_data = Confidence(img_names = img_names, img_labels = labels, creator = user, accuracy_rate = accuracy, previous = '')
+                db.session.add(user_data)
+                
+            db.session.commit()
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
         
         else: 
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
 
+def findCorrect():
+    """These will hold image names that are correct and incorrect"""
+    correct = []
+    incorrect = []
+    """These will hold image labels that are correct and incorrect"""
+    cor_label = []
+    inc_label = []
+    """position in list"""
+    position = 0
+    """Since gamemode will be accessed from final.html we can make use of session[sample] """
+    temp_img_names, temp_labels =  list(zip(*session['train']))
+    """Need to pull data from site, since getData() removes the ground truth in its return value we can't use that code"""
+    s3 = boto3.client('s3')
+    path = 's3://cornimagesbucket/csvOut.csv'
+
+    data = pd.read_csv(path, index_col = 0, header = None)
+    data.columns = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
+    data_mod = data.astype({'8': 'int32','9': 'int32','10': 'int32','12': 'int32','14': 'int32'})
+    """select just index and last column since the rest of the imformation doesn't matter for this task"""
+    data = data_mod.iloc[:, -1:]
+    """now to do the comparison we need to use a for loop for the list of images and use loc[image_name] to pull the row corresponding to that image
+    then we compare the last column with the position in labels then append respectively""" 
+    for i in temp_img_names:
+        temp = data.loc[i, '16']
+        if temp_labels[position] == temp:
+            correct.append(i)
+            cor_label.append(temp_labels[position])
+        else:
+            incorrect.append(i)
+            inc_label.append(temp_labels[position])
+        position += 1
+    """find accuracy rate"""
+    accuracy = (len(correct)/(len(temp_img_names)))
+    return accuracy, correct, incorrect, cor_label, inc_label, len(temp_img_names)
 
 @app.route("/", methods=['GET'])
 @app.route("/index.html",methods=['GET'])
@@ -234,6 +267,21 @@ def home():
     """
     session.pop('model', None)
     return render_template('index.html')
+
+@app.route("/leaderboards.html",methods=['GET', 'POST'])
+def leaderboards():
+    from sqlalchemy import desc
+
+    users = Confidence.query.order_by(desc(Confidence.accuracy_rate)).all()
+    usernames = []
+    accuracies = []
+    num_images = []
+    for i in users:
+        usernames.append(User.query.filter_by(id = i.user_id).first().username)
+        accuracies.append(i.accuracy_rate)
+        temp = i.previous.split(",")
+        num_images.append(temp[(len(temp) - 1)])
+    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames))
 
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
@@ -322,6 +370,8 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
+            c = Confidence.query.filter_by(user_id = user.id).first()
+
             img_names = Confidence.query.filter_by(user_id = user.id).first().img_names
             labels = Confidence.query.filter_by(user_id = user.id).first().img_labels
             img_names_list = img_names.split(",")
@@ -335,17 +385,35 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
                     img_names_list.append(i)
                     labels = labels + ',' + 'B'
 
-            """Clear original data in database"""
+            """update data in database"""
             img_names = ",".join(img_names_list)
-            db.session.delete(Confidence.query.filter_by(user_id = user.id).first())
+            c.img_names = img_names
+            c.img_labels = labels
             db.session.commit()
 
-        """create new database data and commit"""
-
-        user_data = Confidence(img_names = img_names, img_labels = labels, creator = user)
-        db.session.add(user_data)
-        db.session.commit()
-
     return render_template('feedback.html', healthy_list = h_feedback_result, unhealthy_list = u_feedback_result, healthy_conf_list = h_conf_result, unhealthy_conf_list = u_conf_result, h_list_length = h_length, u_list_length = u_length)
+
+
+@app.route("/gamemode",methods=['GET'])
+def gamemode():
+    """
+    Operates the gamemode(gamemode.html) web page.
+    """
+    """find relavant information"""
+    accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect()
+    
+    """if user is logged in then store their accuracy rate"""
+    if current_user.is_authenticated:
+        user = User.query.filter_by(username = current_user.username).first()
+        if Confidence.query.filter_by(user_id = user.id).first():
+            c = Confidence.query.filter_by(user_id = user.id).first()
+            c.accuracy_rate = accuracy
+            if c.previous == '':
+                c.previous = str(length)
+            else:
+                c.previous = c.previous + ',' + length
+            db.session.commit()
+    return render_template('gamemode.html', correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)))
+
 
 #app.run( host='127.0.0.1', port=5000, debug='True', use_reloader = False)
