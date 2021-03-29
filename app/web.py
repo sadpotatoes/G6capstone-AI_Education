@@ -56,25 +56,6 @@ def createMLModel(data):
         The names of the images.
     """
     train_img_names, train_img_label = list(zip(*session['train']))
-
-    if current_user.is_authenticated:
-        user = User.query.filter_by(username = current_user.username).first()
-        if Confidence.query.filter_by(user_id = user.id).first():
-            healthy_string = Confidence.query.filter_by(user_id = user.id).first().healthy_data
-            healthy_list = healthy_string.split(',')
-            train_img_label = []
-            train_img_names = []
-            for i in healthy_list:
-                if i:
-                    train_img_names.append(i)
-                    train_img_label.append('H')
-            blighted_string = Confidence.query.filter_by(user_id = user.id).first().blighted_data
-            blighted_list = blighted_string.split(',')
-            for i in blighted_list:
-                if i:
-                    train_img_names.append(i)
-                    train_img_label.append('B')
-
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
     ml_model = ML_Model(train_set, RandomForestClassifier(), DataPreprocessing(True))
@@ -384,6 +365,7 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
     u_conf_result = list(u_conf_list.split(","))
     h_length = len(h_feedback_result)
     u_length = len(u_feedback_result)
+
     """Here we should store the selected images for storing in the database"""
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
