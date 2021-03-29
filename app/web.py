@@ -278,7 +278,7 @@ def leaderboards():
     num_images = []
     for i in users:
         usernames.append(User.query.filter_by(id = i.user_id).first().username)
-        accuracies.append(i.accuracy_rate)
+        accuracies.append(i.accuracy_rate * 100)
         temp = i.previous.split(",")
         num_images.append(temp[(len(temp) - 1)])
     return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames))
