@@ -9,6 +9,7 @@
 		</div>
 		<div class="text-right">
 			<button id="home" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button>
+			<button id="leaderboards" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Check out who's on top!">Leaderboards</button>
             <br><br>
 		</div>
         <div class="container">
@@ -103,6 +104,11 @@
     $(document).ready(function(){
         $('#home').on('click', function(){
             window.location.href = '/index.html';                           
+        });
+    });
+	$(document).ready(function(){
+        $('#leaderboards').on('click', function(){
+            window.location.href = '/leaderboards.html';                           
         });
     });
  

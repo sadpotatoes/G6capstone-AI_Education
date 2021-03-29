@@ -290,6 +290,10 @@ def home():
     session.pop('model', None)
     return render_template('index.html')
 
+@app.route("/leaderboards.html",methods=['GET', 'POST'])
+def leaderboards():
+    return render_template('leaderboards.html')
+
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
     """

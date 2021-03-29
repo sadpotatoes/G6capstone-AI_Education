@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/index_format.css') }}">
+<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="d-none d-md-flex col-md-4 col-lg-6 bg-image"></div>
+			<div class="col-md-8 col-lg-6">
+				<div class="start d-flex py-2">
+					<div class="container">
+						<div class="row">
+							<div class="col-md-9 col-lg-8 mx-auto">
+                                <div class="text-right"> <a href="index.html"><button class="mb-2 mt-4 active_button">Home</button></a></div>
+								<p><h1 class="start-heading mb-4">
+									Leaderboards
+									</h1></p>
+                                    <p>Data not yet available</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<footer class="page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+            CornAI
+        </div>
+	 </footer>
+</body>
+</html>
+{% endblock %}
