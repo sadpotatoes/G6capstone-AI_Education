@@ -10,8 +10,8 @@
 		</div>
 		<div class="text-right">
 			<a href="index.html"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button></a>
-			<a href="leaderboards.html"><button class="mb-2 mt-4 active_button">Leaderboards</button></a>
-			<a href="{{ url_for('gamemode') }}"><button class="mb-2 mt-4 active_button">Game</button></a>
+			<a href="leaderboards.html"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Check your rank compared to others"></button>>Leaderboards</button></a>
+			<a href="{{ url_for('gamemode') }}"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="See how your picks match up to the real answers"></button>>Game</button></a>
 			<br><br>
 			<h5 class="font-weight-normal">Confidence: {{confidence}}
 			{% if confidence == 1 %}

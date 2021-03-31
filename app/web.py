@@ -19,6 +19,7 @@ import boto3
 from io import StringIO
 from app.models import User, Confidence
 from app.forms import RegistrationForm
+from sqlalchemy import desc
 
 bootstrap = Bootstrap(app)
 
@@ -270,8 +271,6 @@ def home():
 
 @app.route("/leaderboards.html",methods=['GET', 'POST'])
 def leaderboards():
-    from sqlalchemy import desc
-
     users = Confidence.query.order_by(desc(Confidence.accuracy_rate)).all()
     usernames = []
     accuracies = []
@@ -282,6 +281,7 @@ def leaderboards():
         temp = i.previous.split(",")
         num_images.append(temp[(len(temp) - 1)])
     return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames))
+
 
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
