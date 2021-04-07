@@ -8,6 +8,7 @@ Setup the basic layout for the database's users inheirting the base class for mo
     'username' stores the users chosen nickname or username. Unique
     'email' store the users email. Unique
     'password_hash' a hashed item that represents a user password (will not directly store the password)
+    'Confidence_storage' is a relationship between tables Confidence and User
 """
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,9 +40,11 @@ class User(UserMixin, db.Model):
 """
 Setup the basic layout for the user's csvs (storing their confidence rate) inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
     'id' stores the primary key for the model. Each csv will be assigned a unique id
-    'user_id' is a foreign key that connects the confidence data to the user
-    'healthy_data' is a string that that holds the names of all healthy images the user selected
-    'blighted_data' is a string that that holds the names of all blighted images the user selected
+    'user_id' is a foreign key that connects the confidence data to the user via the users id (not username)
+    'img_names' is a string that that holds the names of all images the user selected
+    'img_labels' is a string that that holds the labels for each image
+    'previous' is a string that hold the number of images at each instance accuracy is generated so users can see their previous rates
+    'accuracy_rate' is a float that holds the users most recent accuracy rate, for use in the leaderboards
 """ 
 class Confidence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,7 +56,6 @@ class Confidence(db.Model):
     if we store '10,16' then we know when each accuracy was generated and can regen them based off that information
     This way we don't need to store every previous instance of accuracy and their images"""
     previous = db.Column(db.String)
-    """Keep the most recent accuracy_rate stored here for use in databse"""
     accuracy_rate = db.Column(db.Float)
 
 
