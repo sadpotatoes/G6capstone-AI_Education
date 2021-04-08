@@ -16,11 +16,6 @@
 									AI for Agriculture
 									</h1></p>
 									<br>
-									{% if current_user.is_anonymous %}
-									{% else %}
-									<h3>Hi, {{ current_user.username }}!</h3>
-									<br>
-									{% endif %}
 									<h3>Help farmers to learn about Machine Learning and build up farmers' trust in AI</h3><br><br>
 									<h4>We hope to accomplish this using an interactive machine
 										learning program, which you can test by hitting the start
@@ -35,8 +30,8 @@
 									<a href="{{ url_for('login') }}"><button
 											class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2">Login</button></a>
 									{% else %}
-									<a href="{{ url_for('logout') }}"><button
-										class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2">Logout</button></a>
+									<a href="{{ url_for('profile') }}"><button
+										class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2">Profile</button></a>
 									{% endif %}
 							</div>
 						</div>
