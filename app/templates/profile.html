@@ -48,7 +48,7 @@
         <div class="container">
 			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Previous Accuracy Rate Selections:
 				{%for i in range(0, len_prev)%}
-                    <a href="{{ url_for('previousSelections') }}/{{prev_imgs[i]}}">
+                    <a href="{{ url_for('previousSelections') }}?max={{prev_imgs[i]}}">
                         {{ prev_imgs[i] }}
                     </class>
                 {%endfor%}
