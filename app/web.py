@@ -421,14 +421,22 @@ def profile():
             if temp_list[-1] != str(length):
                 c.previous = c.previous + ',' + str(length)
         db.session.commit()
+        correct_length = len(correct)
+        incorrect_length = len(incorrect)
 
     else:
         accuracy = 0 
-        correct, incorrect, cor_label, inc_label = None
+        correct = None
+        incorrect = None
+        cor_label = None
+        inc_label = None
+        previous_image_selection = None
+        correct_length = 0
+        incorrect_length = 0
         len_imgs = 0
         len_previous = 0
 
-    return render_template('profile.html', len_images = len_imgs, correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)), prev_imgs = previous_image_selection, len_prev = len_previous-1)
+    return render_template('profile.html', len_images = len_imgs, correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = correct_length, inc_length = incorrect_length, acc = "{:.2%}".format(round(accuracy,4)), prev_imgs = previous_image_selection, len_prev = len_previous-1)
 
 @app.route('/previous/', methods=['GET', 'POST'])
 def previousSelections():
