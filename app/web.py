@@ -328,7 +328,7 @@ def leaderboards():
     length_of_board = 0
     for i in users:
         usernames.append(User.query.filter_by(id = i.user_id).first().username)
-        accuracies.append(i.accuracy_rate * 100)
+        accuracies.append("{:.2%}".format(round(i.accuracy_rate,4)))
         temp = i.previous.split(",")
         num_images.append(temp[(len(temp) - 1)])
         length_of_board += 1
@@ -407,22 +407,28 @@ def profile():
     """
     user = User.query.filter_by(username = current_user.username).first()
     if Confidence.query.filter_by(user_id = user.id).first():
-        c = Confidence.query.filter_by(user_id = user.id).first()
-        img_names = c.img_names.split(",")
-        labels = c.img_labels.split(",")
-        accuracy = c.accuracy_rate
+        c = Confidence.query.filter_by(user_id = user.id).first() 
+        accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect(max_num_images=-1)
+        
+        len_imgs = len(correct) + len(incorrect)
         previous_image_selection = c.previous.split(",")
-        len_imgs = len(img_names)
         len_previous = len(previous_image_selection)
+        c.accuracy_rate = accuracy
+        if c.previous == '':
+            c.previous = str(length)
+        else:
+            temp_list = c.previous.split(",")
+            if temp_list[-1] != str(length):
+                c.previous = c.previous + ',' + str(length)
+        db.session.commit()
+
     else:
-        img_names = None
-        labels = None
-        accuracy = None
-        previous_image_selection = None
+        accuracy = 0 
+        correct, incorrect, cor_label, inc_label = None
         len_imgs = 0
         len_previous = 0
 
-    return render_template('profile.html', images = img_names, len_images = len_imgs, image_labels = labels, acc = "{:.2%}".format(round(accuracy,4)), prev_imgs = previous_image_selection, len_prev = len_previous-1)
+    return render_template('profile.html', len_images = len_imgs, correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)), prev_imgs = previous_image_selection, len_prev = len_previous-1)
 
 @app.route('/previous/', methods=['GET', 'POST'])
 def previousSelections():
@@ -518,10 +524,12 @@ def gamemode():
             if c.previous == '':
                 c.previous = str(length)
             else:
-                c.previous = c.previous + ',' + str(length)
+                temp_list = c.previous.split(",")
+                if temp_list[-1] != str(length):
+                    c.previous = c.previous + ',' + str(length)
             db.session.commit()
 
-    """Maybe add a way to show images how many user incorrectly"""
+    """Maybe add a way to show images how many user incorrectly labeled images"""
     return render_template('gamemode.html', correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)))
 
 

@@ -13,27 +13,54 @@
             </h1></p>
 		</div>
 
-		<div class="container">
-            <h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Accuracy:
-				{{acc}} 
-            </h5>
-        </div>
+		
         <div class="container">
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Saved Images:
+			<h4 class="font-weight-light text-center text-lg-left mt-4 mb-0">Total Saved Images:
 				{{len_images}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
+            </h4>
+
+            <h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Accuracy:
+                {{acc}} 
             </h5>
+
 
 			<hr class="mt-2 mb-5">
-
+            <h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Correct Selections:
+				{{cor_length}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Images labeled as B stand for Blighted and H for Heatlhy"> <span class="fa fa-search"></span></a>
+            </h5>
 			<div class="row text-center text-lg-left">
-				{%for i in range(0, len_images)%}
+                
+				{%for i in range(0, cor_length)%}
 				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
-					{% if images[i] == "null"%}
+					{% if correct_list[i] == "null"%}
 					{% else %}
 					<img class="img-fluid img-thumbnail"
-						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{images[i]}}"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{correct_list[i]}}"
 						alt="">
-					<h6 class="font-weight-normal">Saved as: {{image_labels[i]}}
+					<h6 class="font-weight-normal">Saved as: {{cor_label_list[i]}}
+					{% endif %}
+				</div>
+                {%endfor%}
+                <div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+            </div>
+
+            <h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Incorrect Selections:
+				{{inc_length}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Images labeled as B stand for Blighted and H for Heatlhy"> <span class="fa fa-search"></span></a>
+            </h5>
+            <div class="row text-center text-lg-left">
+				{%for i in range(0, inc_length)%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					{% if incorrect_list[i] == "null"%}
+					{% else %}
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{incorrect_list[i]}}"
+						alt="">
+					<h6 class="font-weight-normal">Saved as: {{inc_label_list[i]}}
 					{% endif %}
 				</div>
                 {%endfor%}
