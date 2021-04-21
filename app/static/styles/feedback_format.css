@@ -73,3 +73,15 @@
     text-decoration: none;
     cursor: pointer;
 }
+.column-left {
+    float: left; 
+    width: 33.333%;
+}
+.column-right {
+    float: right; 
+    width: 33.333%;
+}
+.column-middle { 
+    display: inline-block; 
+    width: 33.333%; 
+}

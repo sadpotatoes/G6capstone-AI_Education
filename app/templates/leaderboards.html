@@ -13,7 +13,7 @@
 		</div>
 
 		<div class="row">
-			<div class="column">
+			<div class="column-left">
 				<h4>Username:	</h4>
 				<p>
 					{%for i in range(0, length)%}
@@ -23,7 +23,7 @@
 					{%endfor%}
 				</p>
 			</div>
-			<div class="column">
+			<div class="column-middle">
 				<h4>Accuracy Rate:	</h4>
 				<p>
 					{%for i in range(0, length)%}
@@ -33,7 +33,7 @@
 					{%endfor%}
 				</p>
 			</div>
-			<div class="column">
+			<div class="column-right">
 				<h4>Number of Images:	</h4>
 				<p>{%for i in range(0, length)%}
 					{{num_imgs[i]}}
