@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/feedback_format.css') }}">
+<body>
+	<div class="container">
+		<div class="row border-bottom">
+			<h1 class="font-weight-light pb-3 mb-2 mt-4"> Leaderboards </h1>
+		</div>
+		<div class="text-right">
+			<button id="home" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page">Home</button>
+			</h1></p>
+		</div>
+
+		<div class="row">
+			<div class="column-left">
+				<h4>Username:	</h4>
+				<p>
+					{%for i in range(0, length)%}
+						{{names[i]}}
+						<br>
+				
+					{%endfor%}
+				</p>
+			</div>
+			<div class="column-middle">
+				<h4>Accuracy Rate:	</h4>
+				<p>
+					{%for i in range(0, length)%}
+						{{acc[i]}}
+						<br>
+				
+					{%endfor%}
+				</p>
+			</div>
+			<div class="column-right">
+				<h4>Number of Images:	</h4>
+				<p>{%for i in range(0, length)%}
+					{{num_imgs[i]}}
+					<br>
+			
+				{%endfor%}</p>
+			</div>
+		  </div>
+		</div>
+
+		<div class="container">
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Images Most Accurately Identified:
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Images here have been correctly identified as either healthy or blighted the most times"> <span class="fa fa-search"></span></a>
+			</h5>
+			<div class="row text-center text-lg-left">
+				
+				{%for i in range(0, high_len)%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					{% if high[i] == "null"%}
+					{% else %}
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{high[i]}}"
+						alt="">
+					<h6 class="font-weight-normal">{{i+1}}: Currectly ID'd {{cor_id_times[i]}} times
+					{% endif %}
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+		<div class="container">
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Images Most Misidentified:
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Images here have been incorrectly identified as either healthy or blighted the most times"> <span class="fa fa-search"></span></a>
+			</h5>
+			<div class="row text-center text-lg-left">
+				
+				{%for i in range(0, low_len)%}
+				<div class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+					{% if low[i] == "null"%}
+					{% else %}
+					<img class="img-fluid img-thumbnail"
+						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{low[i]}}"
+						alt="">
+					<h6 class="font-weight-normal">{{i+1}}: Currectly ID'd {{mis_id_times[i]}} times
+					{% endif %}
+				</div>
+				{%endfor%}
+				<div id="myModal" class="modal">
+
+					<span class="close">&times;</span>
+
+					<img class="modal-content" id="imgset">
+				</div>
+			</div>
+		</div>
+
+	</div>
+	<footer class="page-footer font-small">
+	    <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
+            CornAI
+        </div>
+	 </footer>
+
+
+
+	 <script>
+		var modal = document.getElementById('myModal');
+        
+        var images = document.querySelectorAll(".img-thumbnail");
+        var modalImg = document.getElementById("imgset");
+        for(let i = 0; i < images.length; i++){
+            images[i].onclick = function(){
+                modal.style.display = "block";
+                modalImg.src = this.src;
+            }
+        }
+
+        var span = document.getElementsByClassName("close")[0];
+
+        span.onclick = function(){
+        modal.style.display = "none";
+        }
+        $(document).ready(function(){
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+        $(document).ready(function(){
+            $('[data-toggle="popover"]').popover();
+        });
+	 $(document).ready(function(){
+        $('#home').on('click', function(){
+            window.location.href = '/index.html';                           
+        });
+    });
+ 
+	</script>
+</body>
+</html>
+{% endblock %}
