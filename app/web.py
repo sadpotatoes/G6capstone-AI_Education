@@ -17,7 +17,7 @@ import os
 import numpy as np
 import boto3
 from io import StringIO
-from app.models import User, Confidence
+from app.models import User, Confidence, ImageStats
 from app.forms import RegistrationForm
 
 bootstrap = Bootstrap(app)
@@ -110,7 +110,7 @@ def initializeAL(form, confidence_break = .7):
     session['model'] = True
     session['queue'] = list(al_model.sample.index.values)
 
-    """In order to stop an issue where the system asks the user to re label one of their selected images we need to make sure the queue is empty and skip calling RenderLabel"""
+    """In order to stop an issue where the system asks the user to re label one of their selected images we need to make sure the queue is empty and skip calling renderLabel"""
 
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
@@ -175,7 +175,7 @@ def prepairResults(form):
         session['labels'].append(form.choice.data)
 
     session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
-
+    
     if session['train'] != None:
         session['train'] = session['train'] + session['sample']
     else:
@@ -183,9 +183,31 @@ def prepairResults(form):
 
 
     data = getData()
-    ml_model, train_img_names = createMLModel(data)
+    """This is temp fix to find the largest confidence rate and use that model
+    instead should findout why the ml model is generating three different models 
+    and correct that <- After reviewing Scilearn and their methods for training it turns out they are stochastic in nature meaning
+    they will always have a form of 'randomness' that can't really be 'fixed' since its part of the library
 
+    One thing tht could be looked into instead of regenerating models is saving the models directly using something like pickel or joblib
+    but these have their own issues. 
+
+    ideally what should happen is we have a filesystem that we store the models in and have a database entry for each user pointing to their saved data in the system
+
+    """
+    confidence_test = 0
+    for i in range(5):
+        ml_model_temp, train_img_names_temp = createMLModel(data)
+        conf_temp = np.mean(ml_model_temp.K_fold())
+        if conf_temp > confidence_test:
+            ml_model = ml_model_temp
+            train_img_names = train_img_names_temp
+            session['confidence'] = conf_temp
+            confidence_test = conf_temp
+
+    """
+    ml_model, train_img_names = createMLModel(data)
     session['confidence'] = np.mean(ml_model.K_fold())
+    """
     session['labels'] = []
 
     if session['confidence'] < session['confidence_break']:
@@ -203,28 +225,42 @@ def prepairResults(form):
             img_names = ""
             labels = ""
             temp_img_names, temp_labels =  list(zip(*session['train']))
+            """For some reason unzipping the session train was reversing the image names so we need to fix that"""
+            list(temp_img_names).reverse()
             accuracy = 0.0
             img_names = ",".join(temp_img_names)
             labels = ",".join(temp_labels)
             """If user has information already stored then update it"""
-            
             if Confidence.query.filter_by(user_id = user.id).first():
                 c = Confidence.query.filter_by(user_id = user.id).first()
                 c.img_labels = labels
                 c.img_names = img_names
 
-                """if they dont have information then create and commit"""
+                """if they dont have information then create new table data"""
             else:
                 user_data = Confidence(img_names = img_names, img_labels = labels, creator = user, accuracy_rate = accuracy, previous = '')
                 db.session.add(user_data)
-                
+            """Commit changes"""
             db.session.commit()
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
         
         else: 
             return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
 
-def findCorrect():
+def findCorrect(max_num_images):
+    """
+    Finds the images the user labeled correctly and incorrectly
+
+    Parameters
+    ----------
+    max_num_images integar for use in stoping the function early in case of finding previous accuracy rates
+
+    Returns
+    -------
+    Lists accuracy, correct, incorrect, cor_label, inc_label
+        and number of images
+    """
+
     """These will hold image names that are correct and incorrect"""
     correct = []
     incorrect = []
@@ -233,9 +269,16 @@ def findCorrect():
     inc_label = []
     """position in list"""
     position = 0
-    """Since gamemode will be accessed from final.html we can make use of session[sample] """
-    temp_img_names, temp_labels =  list(zip(*session['train']))
-    """Need to pull data from site, since getData() removes the ground truth in its return value we can't use that code"""
+    if current_user.is_authenticated:
+        user, c = pullUserData()
+        if c:
+            """If user hase stored data then pull from there"""
+            temp_img_names, temp_labels = c.img_names.split(","), c.img_labels.split(",")
+    else:
+        """Since gamemode will be accessed from final.html we can make use of session[sample] """
+        temp_img_names, temp_labels =  list(zip(*session['train']))
+    """Need to pull data from site, since getData() removes the ground truth in its return value we can't use that code
+    and we can't just add it to the return since that'll break some of the Machine learning algorithms"""
     s3 = boto3.client('s3')
     path = 's3://cornimagesbucket/csvOut.csv'
 
@@ -255,9 +298,32 @@ def findCorrect():
             incorrect.append(i)
             inc_label.append(temp_labels[position])
         position += 1
+        if position == max_num_images:
+            break
     """find accuracy rate"""
-    accuracy = (len(correct)/(len(temp_img_names)))
+    accuracy = (len(correct)/position)
     return accuracy, correct, incorrect, cor_label, inc_label, len(temp_img_names)
+
+def pullUserData():
+    """
+    Returns the current user and their confidence data if applicable
+
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    SQLAlchemy datatypes for user and confidence tabels
+    """
+    """This function will be used to replace all the if/else statements throughout the code to clean it up a bit"""
+    user = User.query.filter_by(username = current_user.username).first()
+    if Confidence.query.filter_by(user_id = user.id).first():
+        c = Confidence.query.filter_by(user_id = user.id).first()
+    else:
+        c = None
+
+    return(user, c)
 
 @app.route("/", methods=['GET'])
 @app.route("/index.html",methods=['GET'])
@@ -270,18 +336,45 @@ def home():
 
 @app.route("/leaderboards.html",methods=['GET', 'POST'])
 def leaderboards():
+    """
+    Operates the leaderboards(leaderboards.html) web page.
+    """
     from sqlalchemy import desc
-
+    """This pulls all data in the Confidence table from the database and sorts in descending order based on accuracy rate
+    for the purposes of our leaderboard we only want to display top 20 so we need a breaking variable"""
     users = Confidence.query.order_by(desc(Confidence.accuracy_rate)).all()
     usernames = []
     accuracies = []
     num_images = []
+    highest_correct_list = []
+    num_times_cor_id = []
+    highest_incorrect_list = []
+    num_times_mis_id = []
+
+    length_of_board = 0
     for i in users:
         usernames.append(User.query.filter_by(id = i.user_id).first().username)
-        accuracies.append(i.accuracy_rate * 100)
+        accuracies.append("{:.2%}".format(round(i.accuracy_rate,4)))
         temp = i.previous.split(",")
         num_images.append(temp[(len(temp) - 1)])
-    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames))
+        length_of_board += 1
+        """if we have 20 users selected for leader board then break"""
+        if length_of_board >= 20:
+            break
+
+    top_correct_images = ImageStats.query.order_by(desc(ImageStats.cor_id_times)).limit(10).all()
+    for i in top_correct_images:
+        if i.cor_id_times != 0:
+            highest_correct_list.append(i.img_name)
+            num_times_cor_id.append(i.cor_id_times)
+
+    top_incorrect_images = ImageStats.query.order_by(desc(ImageStats.mis_id_times)).limit(10).all()
+    for i in top_incorrect_images:
+        if i.mis_id_times != 0:
+            highest_incorrect_list.append(i.img_name)
+            num_times_mis_id.append(i.mis_id_times)
+    
+    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames), high = highest_correct_list, high_len = len(highest_correct_list), cor_id_times = num_times_cor_id, low = highest_incorrect_list, low_len = len(highest_incorrect_list), mis_id_times = num_times_mis_id)
 
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
@@ -312,22 +405,29 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
+    error = None
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
+            flash("Invalid username or password")
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         return redirect(url_for('home'))
-    return render_template('login.html', title='Sign In', form = form)
+    return render_template('login.html', title='Sign In', form = form, error_msg = error)
 
 @app.route('/logout')
 def logout():
+    """
+    Operates the logout button.
+    """
     logout_user()
     return redirect(url_for('home'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """
+    Operates the register(register.html) web page.
+    """
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     form = RegistrationForm()
@@ -339,6 +439,66 @@ def register():
         flash('Registerd!')
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
+
+@app.route('/profile.html', methods=['GET', 'POST'])
+def profile():
+    """
+    Operates the profile(profile.html) web page.
+    """
+    user = User.query.filter_by(username = current_user.username).first()
+    if Confidence.query.filter_by(user_id = user.id).first():
+        c = Confidence.query.filter_by(user_id = user.id).first() 
+        accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect(max_num_images=-1)
+        
+        len_imgs = len(correct) + len(incorrect)
+        previous_image_selection = c.previous.split(",")
+        len_previous = len(previous_image_selection)
+        c.accuracy_rate = accuracy
+        if c.previous == '':
+            c.previous = str(length)
+        else:
+            temp_list = c.previous.split(",")
+            if temp_list[-1] != str(length):
+                c.previous = c.previous + ',' + str(length)
+        db.session.commit()
+        correct_length = len(correct)
+        incorrect_length = len(incorrect)
+
+    else:
+        accuracy = 0 
+        correct = None
+        incorrect = None
+        cor_label = None
+        inc_label = None
+        previous_image_selection = None
+        correct_length = 0
+        incorrect_length = 0
+        len_imgs = 0
+        len_previous = 0
+
+    return render_template('profile.html', len_images = len_imgs, correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = correct_length, inc_length = incorrect_length, acc = "{:.2%}".format(round(accuracy,4)), prev_imgs = previous_image_selection, len_prev = len_previous-1)
+
+@app.route('/previous/', methods=['GET', 'POST'])
+def previousSelections():
+    """
+    Operates the previousSelections(previous.html) web page.
+    """
+    max_num_images = request.args.get('max', default='0', type=str)
+    
+    accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect(max_num_images=int(max_num_images))
+    return render_template('previous.html', correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)))
+
+@app.route("/clearData.html")
+def clearData():
+    """
+    Operates the clear database button in the profile page.
+    """
+    user = User.query.filter_by(username = current_user.username).first()
+    c = Confidence.query.filter_by(user_id = user.id).first()
+    db.session.delete(c)
+    db.session.commit()
+
+    return redirect(url_for('profile'))
 
 @app.route("/intermediate.html",methods=['GET'])
 def intermediate():
@@ -367,13 +527,14 @@ def feedback(h_list,u_list,h_conf_list,u_conf_list):
     u_length = len(u_feedback_result)
 
     """Here we should store the selected images for storing in the database"""
+    """should look to move code out of page handler since it could be causing slow down"""
     if current_user.is_authenticated:
         user = User.query.filter_by(username = current_user.username).first()
         if Confidence.query.filter_by(user_id = user.id).first():
             c = Confidence.query.filter_by(user_id = user.id).first()
 
-            img_names = Confidence.query.filter_by(user_id = user.id).first().img_names
-            labels = Confidence.query.filter_by(user_id = user.id).first().img_labels
+            img_names = c.img_names
+            labels = c.img_labels
             img_names_list = img_names.split(",")
             if u_list != 'null':
                 for i in u_feedback_result:
@@ -400,7 +561,7 @@ def gamemode():
     Operates the gamemode(gamemode.html) web page.
     """
     """find relavant information"""
-    accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect()
+    accuracy, correct, incorrect, cor_label, inc_label, length = findCorrect(max_num_images=-1)
     
     """if user is logged in then store their accuracy rate"""
     if current_user.is_authenticated:
@@ -411,8 +572,28 @@ def gamemode():
             if c.previous == '':
                 c.previous = str(length)
             else:
-                c.previous = c.previous + ',' + length
+                temp_list = c.previous.split(",")
+                if temp_list[-1] != str(length):
+                    c.previous = c.previous + ',' + str(length)
             db.session.commit()
+    for i in correct:
+        image_info = ImageStats.query.get(i)
+        if image_info:
+            image_info.cor_id_times = image_info.cor_id_times + 1   
+        else:
+            image_info = ImageStats(img_name = i, cor_id_times = 1, mis_id_times = 0)
+            db.session.add(image_info)
+            
+    for i in incorrect:
+        image_info = ImageStats.query.get(i)
+        if image_info:
+            image_info.mis_id_times = image_info.mis_id_times + 1
+        else:
+            image_info = ImageStats(img_name = i, cor_id_times = 0, mis_id_times = 1)
+            db.session.add(image_info)
+
+    db.session.commit()
+
     return render_template('gamemode.html', correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)))
 
 
