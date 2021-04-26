@@ -57,6 +57,14 @@ class Confidence(db.Model):
     accuracy_rate = db.Column(db.Float)
 
 
+"""
+
+"""
+class ImageStats(db.Model): 
+    img_name = db.Column(db.String, primary_key=True)
+    mis_id_times = db.Column(db.Integer)
+    cor_id_times = db.Column(db.Integer)
+
 def __repr__(self):
     return '<User {}>'.format(self.username)
 

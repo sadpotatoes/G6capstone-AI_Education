@@ -17,7 +17,7 @@ import os
 import numpy as np
 import boto3
 from io import StringIO
-from app.models import User, Confidence
+from app.models import User, Confidence, ImageStats
 from app.forms import RegistrationForm
 
 bootstrap = Bootstrap(app)
@@ -183,9 +183,31 @@ def prepairResults(form):
 
 
     data = getData()
-    ml_model, train_img_names = createMLModel(data)
+    """This is temp fix to find the largest confidence rate and use that model
+    instead should findout why the ml model is generating three different models 
+    and correct that <- After reviewing Scilearn and their methods for training it turns out they are stochastic in nature meaning
+    they will always have a form of 'randomness' that can't really be 'fixed' since its part of the library
 
+    One thing tht could be looked into instead of regenerating models is saving the models directly using something like pickel or joblib
+    but these have their own issues. 
+
+    ideally what should happen is we have a filesystem that we store the models in and have a database entry for each user pointing to their saved data in the system
+
+    """
+    confidence_test = 0
+    for i in range(5):
+        ml_model_temp, train_img_names_temp = createMLModel(data)
+        conf_temp = np.mean(ml_model_temp.K_fold())
+        if conf_temp > confidence_test:
+            ml_model = ml_model_temp
+            train_img_names = train_img_names_temp
+            session['confidence'] = conf_temp
+            confidence_test = conf_temp
+
+    """
+    ml_model, train_img_names = createMLModel(data)
     session['confidence'] = np.mean(ml_model.K_fold())
+    """
     session['labels'] = []
 
     if session['confidence'] < session['confidence_break']:
@@ -247,11 +269,11 @@ def findCorrect(max_num_images):
     inc_label = []
     """position in list"""
     position = 0
-
-    user, c = pullUserData()
-    if c:
-        """If user hase stored data then pull from there"""
-        temp_img_names, temp_labels = c.img_names.split(","), c.img_labels.split(",")
+    if current_user.is_authenticated:
+        user, c = pullUserData()
+        if c:
+            """If user hase stored data then pull from there"""
+            temp_img_names, temp_labels = c.img_names.split(","), c.img_labels.split(",")
     else:
         """Since gamemode will be accessed from final.html we can make use of session[sample] """
         temp_img_names, temp_labels =  list(zip(*session['train']))
@@ -324,7 +346,11 @@ def leaderboards():
     usernames = []
     accuracies = []
     num_images = []
-    
+    highest_correct_list = []
+    num_times_cor_id = []
+    highest_incorrect_list = []
+    num_times_mis_id = []
+
     length_of_board = 0
     for i in users:
         usernames.append(User.query.filter_by(id = i.user_id).first().username)
@@ -335,7 +361,20 @@ def leaderboards():
         """if we have 20 users selected for leader board then break"""
         if length_of_board >= 20:
             break
-    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames))
+
+    top_correct_images = ImageStats.query.order_by(desc(ImageStats.cor_id_times)).limit(10).all()
+    for i in top_correct_images:
+        if i.cor_id_times != 0:
+            highest_correct_list.append(i.img_name)
+            num_times_cor_id.append(i.cor_id_times)
+
+    top_incorrect_images = ImageStats.query.order_by(desc(ImageStats.mis_id_times)).limit(10).all()
+    for i in top_incorrect_images:
+        if i.mis_id_times != 0:
+            highest_incorrect_list.append(i.img_name)
+            num_times_mis_id.append(i.mis_id_times)
+    
+    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames), high = highest_correct_list, high_len = len(highest_correct_list), cor_id_times = num_times_cor_id, low = highest_incorrect_list, low_len = len(highest_incorrect_list), mis_id_times = num_times_mis_id)
 
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
@@ -366,14 +405,14 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
+    error = None
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
-            return redirect(url_for('login'))
+            error = "Invalid username or password"
         login_user(user, remember=form.remember_me.data)
         return redirect(url_for('home'))
-    return render_template('login.html', title='Sign In', form = form)
+    return render_template('login.html', title='Sign In', form = form, error_msg = error)
 
 @app.route('/logout')
 def logout():
@@ -536,8 +575,24 @@ def gamemode():
                 if temp_list[-1] != str(length):
                     c.previous = c.previous + ',' + str(length)
             db.session.commit()
+    for i in correct:
+        image_info = ImageStats.query.get(i)
+        if image_info:
+            image_info.cor_id_times = image_info.cor_id_times + 1   
+        else:
+            image_info = ImageStats(img_name = i, cor_id_times = 1, mis_id_times = 0)
+            db.session.add(image_info)
+            
+    for i in incorrect:
+        image_info = ImageStats.query.get(i)
+        if image_info:
+            image_info.mis_id_times = image_info.mis_id_times + 1
+        else:
+            image_info = ImageStats(img_name = i, cor_id_times = 0, mis_id_times = 1)
+            db.session.add(image_info)
 
-    """Maybe add a way to show images how many user incorrectly labeled images"""
+    db.session.commit()
+
     return render_template('gamemode.html', correct_list = correct, incorrect_list = incorrect, cor_label_list = cor_label, inc_label_list = inc_label, cor_length = len(correct), inc_length = len(incorrect), acc = "{:.2%}".format(round(accuracy,4)))
 
 
