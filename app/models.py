@@ -64,6 +64,7 @@ class ImageStats(db.Model):
     img_name = db.Column(db.String, primary_key=True)
     mis_id_times = db.Column(db.Integer)
     cor_id_times = db.Column(db.Integer)
+    ground_truth = db.Column(db.String)
 
 def __repr__(self):
     return '<User {}>'.format(self.username)

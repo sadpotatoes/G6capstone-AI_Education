@@ -137,14 +137,18 @@ class ML_Model:
         #y_pred = list(y_pred)
         health_pic = []
         blight_pic = []
-        if len(y_pic) == 10:
-            y_pic = y_pic[::-1]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic[y_idx])
-        else:
+        
+        for y_idx, y in enumerate(y_actual):
+            if y == 'H':
+                health_pic.append(y_pic[y_idx])
+            elif y == 'B':
+                blight_pic.append(y_pic[y_idx])
+    
+            
+        """
+            This is part of the original teams code, what it did was reorder a list of image names to represent the actual order that they were selected in in the len of y_pic was greater than 10
+            I believe they had to do this because their session['queue'] in web.py wasn't actually a queue but instead a stack that they were popping from
+            Since it's been changed to a queue (really it's still a stack but we are popping from the front instead of using dequeue) this code is unneccesarry
             y_pic_head = y_pic[:10]
             y_pic_head_rev = y_pic_head[::-1]
             y_pic_result = y_pic_head_rev
@@ -157,9 +161,10 @@ class ML_Model:
                 y_pic_tail = y_pic_tail[5:]
             for y_idx, y in enumerate(y_actual):
                 if y == 'H':
-                    health_pic.append(y_pic_result[y_idx])
+                    health_pic.append(y_pic[y_idx])
                 elif y == 'B':
-                    blight_pic.append(y_pic_result[y_idx])
+                    blight_pic.append(y_pic[y_idx])
+        """
         return health_pic, blight_pic
 
     def infoForResults(self, train_img_names, test):
@@ -338,14 +343,12 @@ class Active_ML_Model:
         #y_pred = list(y_pred)
         health_pic = []
         blight_pic = []
-        if len(y_pic) == 10:
-            y_pic = y_pic[::-1]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic[y_idx])
-        else:
+        for y_idx, y in enumerate(y_actual):
+            if y == 'H':
+                health_pic.append(y_pic[y_idx])
+            elif y == 'B':
+                blight_pic.append(y_pic[y_idx])
+        """
             y_pic_head = y_pic[:10]
             y_pic_head_rev = y_pic_head[::-1]
             y_pic_result = y_pic_head_rev
@@ -361,6 +364,7 @@ class Active_ML_Model:
                     health_pic.append(y_pic_result[y_idx])
                 elif y == 'B':
                     blight_pic.append(y_pic_result[y_idx])
+        """
         return health_pic, blight_pic
 
     def infoForResults(self):

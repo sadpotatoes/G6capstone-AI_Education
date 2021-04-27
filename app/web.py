@@ -76,7 +76,7 @@ def renderLabel(form):
         renders the label.html webpage.
     """
     queue = session['queue']
-    img = queue.pop()
+    img = queue.pop(0)
     session['queue'] = queue
     return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'])
 
@@ -110,6 +110,7 @@ def initializeAL(form, confidence_break = .7):
     session['model'] = True
     session['queue'] = list(al_model.sample.index.values)
 
+
     """In order to stop an issue where the system asks the user to re label one of their selected images we need to make sure the queue is empty and skip calling renderLabel"""
 
     if current_user.is_authenticated:
@@ -122,12 +123,10 @@ def initializeAL(form, confidence_break = .7):
                 if i:
                     session['labels'].append(i)
 
-
             return prepairResults(form)
 
 
     return renderLabel(form)
-
 
 
 
@@ -156,6 +155,7 @@ def getNextSetOfImages(form, sampling_method):
 
     return renderLabel(form)
 
+
 def prepairResults(form):
     """
     Creates the new machine learning model and gets the confidence of the machine learning model.
@@ -175,7 +175,7 @@ def prepairResults(form):
         session['labels'].append(form.choice.data)
 
     session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
-    
+
     if session['train'] != None:
         session['train'] = session['train'] + session['sample']
     else:
@@ -192,7 +192,7 @@ def prepairResults(form):
     but these have their own issues. 
 
     ideally what should happen is we have a filesystem that we store the models in and have a database entry for each user pointing to their saved data in the system
-
+    then just pull that data
     """
     confidence_test = 0
     for i in range(5):
@@ -204,10 +204,6 @@ def prepairResults(form):
             session['confidence'] = conf_temp
             confidence_test = conf_temp
 
-    """
-    ml_model, train_img_names = createMLModel(data)
-    session['confidence'] = np.mean(ml_model.K_fold())
-    """
     session['labels'] = []
 
     if session['confidence'] < session['confidence_break']:
@@ -225,8 +221,6 @@ def prepairResults(form):
             img_names = ""
             labels = ""
             temp_img_names, temp_labels =  list(zip(*session['train']))
-            """For some reason unzipping the session train was reversing the image names so we need to fix that"""
-            list(temp_img_names).reverse()
             accuracy = 0.0
             img_names = ",".join(temp_img_names)
             labels = ",".join(temp_labels)
@@ -271,12 +265,13 @@ def findCorrect(max_num_images):
     position = 0
     if current_user.is_authenticated:
         user, c = pullUserData()
-        if c:
+        if c: #Since this code is coming from prepaireResults it's safe to assume they have confidence data however in the event something bugged out we should still check
             """If user hase stored data then pull from there"""
             temp_img_names, temp_labels = c.img_names.split(","), c.img_labels.split(",")
     else:
-        """Since gamemode will be accessed from final.html we can make use of session[sample] """
+        """Since gamemode will be accessed from final.html we can make use of session[sample] in the even no one is logged in"""
         temp_img_names, temp_labels =  list(zip(*session['train']))
+        
     """Need to pull data from site, since getData() removes the ground truth in its return value we can't use that code
     and we can't just add it to the return since that'll break some of the Machine learning algorithms"""
     s3 = boto3.client('s3')
@@ -363,18 +358,27 @@ def leaderboards():
             break
 
     top_correct_images = ImageStats.query.order_by(desc(ImageStats.cor_id_times)).limit(10).all()
+    correct_label = []
     for i in top_correct_images:
         if i.cor_id_times != 0:
             highest_correct_list.append(i.img_name)
             num_times_cor_id.append(i.cor_id_times)
-
+            if i.ground_truth == 'H':
+                correct_label.append('H')
+            else: 
+                correct_label.append('B')
     top_incorrect_images = ImageStats.query.order_by(desc(ImageStats.mis_id_times)).limit(10).all()
+    incorrect_label = []
     for i in top_incorrect_images:
         if i.mis_id_times != 0:
             highest_incorrect_list.append(i.img_name)
             num_times_mis_id.append(i.mis_id_times)
+            if i.ground_truth == 'H':
+                incorrect_label.append('B')
+            else: 
+                incorrect_label.append('H')
     
-    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames), high = highest_correct_list, high_len = len(highest_correct_list), cor_id_times = num_times_cor_id, low = highest_incorrect_list, low_len = len(highest_incorrect_list), mis_id_times = num_times_mis_id)
+    return render_template('leaderboards.html', names = usernames, acc = accuracies, num_imgs = num_images, length = len(usernames), high = highest_correct_list, high_len = len(highest_correct_list), cor_id_times = num_times_cor_id, low = highest_incorrect_list, low_len = len(highest_incorrect_list), mis_id_times = num_times_mis_id, mis_label = incorrect_label, cor_label = correct_label)
 
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
@@ -410,7 +414,7 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password")
-            return redirect(url_for('login.html'))
+            return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         return redirect(url_for('home'))
     return render_template('login.html', title='Sign In', form = form, error_msg = error)
@@ -576,21 +580,32 @@ def gamemode():
                 if temp_list[-1] != str(length):
                     c.previous = c.previous + ',' + str(length)
             db.session.commit()
+    temp_loc = 0
     for i in correct:
         image_info = ImageStats.query.get(i)
         if image_info:
             image_info.cor_id_times = image_info.cor_id_times + 1   
         else:
-            image_info = ImageStats(img_name = i, cor_id_times = 1, mis_id_times = 0)
+            image_info = ImageStats(img_name = i, cor_id_times = 1, mis_id_times = 0, ground_truth = cor_label[temp_loc])
             db.session.add(image_info)
-            
+        temp_loc += 1
+
+    temp_loc = 0
+    inc_ground_truth = []
+    for i in inc_label:
+        if i == 'H':
+            inc_ground_truth.append('B')
+        else:
+            inc_ground_truth.append('H')  
+          
     for i in incorrect:
         image_info = ImageStats.query.get(i)
         if image_info:
             image_info.mis_id_times = image_info.mis_id_times + 1
         else:
-            image_info = ImageStats(img_name = i, cor_id_times = 0, mis_id_times = 1)
+            image_info = ImageStats(img_name = i, cor_id_times = 0, mis_id_times = 1, ground_truth = inc_ground_truth[temp_loc])
             db.session.add(image_info)
+        temp_loc += 1
 
     db.session.commit()
 
