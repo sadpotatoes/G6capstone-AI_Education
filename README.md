@@ -8,6 +8,7 @@ The CapstoneMain is used to run this project. Images folder is used to hold all 
 The user will interact with a web-based user interface, where they’ll be asked to label pictures of corn as either healthy or unhealthy. 
 
 
+NOTE View README.md as raw inorder to see proper layout, for some reason its wrapping the code and ignoring new lines
 Install Steps
 Assuming using Visual Studio Code or similar, have python 3 installed and setup and on windows
 While in project folder open the terminal and run 
