@@ -74,3 +74,9 @@ INFO  [alembic.runtime.migration] Will assume non-transactional DDL.\
 INFO  [alembic.runtime.migration] Running upgrade  -> 3e51231f2134, users table\
 \
 NOTE 'users table' is just the name of the update it could be called anything.\
+
+
+
+IN THE INSTANCE that you are running the app on a new machine or new file location you need to delete both the migrations folder and app.db then re-run the \ 
+three commands to generate a new database, this seems to be the fix to an internal error that appears when using code in a new location. \ 
+NOTE you will lose all sotred data
