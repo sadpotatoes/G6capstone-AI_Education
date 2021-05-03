@@ -26,3 +26,9 @@ body {
   box-shadow: 0 5px #666;
   transform: translateY(4px);
 }
+
+.flashes {
+  color: red;
+  list-style-type: square;
+  text-align: left;
+}
