@@ -38,8 +38,8 @@ class User(UserMixin, db.Model):
 
 
 """
-Setup the basic layout for the user's csvs (storing their confidence rate) inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
-    'id' stores the primary key for the model. Each csv will be assigned a unique id
+Setup the basic layout for the user's stored data  inheirting the base class for models from Flask-SQLAlchemy (inherited via db.Model)
+    'id' stores the primary key for the model. Each entry will be assigned a unique id
     'user_id' is a foreign key that connects the confidence data to the user via the users id (not username)
     'img_names' is a string that that holds the names of all images the user selected
     'img_labels' is a string that that holds the labels for each image
@@ -60,7 +60,11 @@ class Confidence(db.Model):
 
 
 """
-
+Setup the basic table structure for image statistics, currently only tracks name ground truth misidentfied times and correct identified times
+    'img_name' stores the primary key for each entry using the image name for easy search
+    'mis_id_times' stores the number of times the image is misidentified
+    'cor_id_times' stores the number of times the image is correctly identified
+    'ground_truth' stores the ground truth for the image, this is being stored to cut down on the number of times we need to call the csv to help efficiency 
 """
 class ImageStats(db.Model): 
     img_name = db.Column(db.String, primary_key=True)
